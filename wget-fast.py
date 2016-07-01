@@ -4,6 +4,8 @@ import requests
 import getopt, sys
 import configer
 import threading
+import time
+import queue
 
 class Downloader(object):
 
@@ -13,6 +15,12 @@ class Downloader(object):
         self.file_lock = threading.Lock()
         self.block_size = 1000
         self.thread_list = list()
+        self.speed = dict() # Download Speed for each thread
+        self.worker_com = queue.Queue() # queue for works send speed info
+        self.total_speed = 0 # sum of the speed
+        self.num_speed = [0] # the speed when how many threads are started
+                             # 0 thread meands speed is 0
+        self.worker_count = 0
 
     # Setup the slaver
     def _download(self):
@@ -28,6 +36,7 @@ class Downloader(object):
             )
             start_point = data_range[0]
             for bunch in response.iter_content(self.block_size):
+                _time = time.time()
                 with self.file_lock:
                     with open(
                         self.configer.path, 'r+b',
@@ -37,11 +46,33 @@ class Downloader(object):
                         f.write(bunch)
                         f.flush()
                 start_point += self.block_size
+                self.worker_com.put((
+                    threading.current_thread().name,
+                    int(self.block_size / (time.time() - _time))
+                ))
+            self.configer.down_queue.task_done()
 
     # start and mornit
     def start_download(self):
-        t = threading.Thread(target=self._download)
+        t = threading.Thread(target = self._download)
+        self.thread_list.append(t)
         t.start()
+        while self.thread_list:
+            info = self.worker_com.get()
+            self.speed[info[0]] = info[1]
+            self.total_speed = sum(list(self.speed.values()))
+            self.worker_count = len(self.thread_list)
+            sys.stdout.write('\b'*64 + '{:10}'.format(self.total_speed)
+                + '  thread' + str(self.worker_count))
+            sys.stdout.flush()
+            self.thread_list[:] = [t for t in self.thread_list 
+                    if t.isAlive()]
+            self.num_speed[self.worker_count - 1] = self.total_speed
+            if self.num_speed[self.worker_count - 1] >= self.num_speed[self.worker_count - 2] and self.worker_count <= self.configer.max_thread:
+                t = threading.Thread(target = self._download)
+                self.thread_list.append(t)
+                t.start()
+                self.num_speed.append(0)
 
 def main():
     # Try to get options by user

@@ -16,7 +16,7 @@ class Download_Configer(object):
         self.domain = parse_result.netloc
         self.saveto = saveto
         self.path = os.path.join(self.saveto, self.filename)
-        self.max_thread = 30
+        self.max_thread = 10
         self.min_block = 1000
         self.down_queue = queue.Queue(self.max_thread)
         self._get_url_header()
