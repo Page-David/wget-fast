@@ -52,27 +52,39 @@ class Downloader(object):
                 ))
             self.configer.down_queue.task_done()
 
+    # speed monitor
+    def speed_monitor(self):
+        while len(self.thread_list)>0:
+            try:
+                info = self.worker_com.get_nowait()
+                self.speed[info[0]] = info[1]
+            except queue.Empty:
+                time.sleep(0.1)
+                continue
+            sys.stdout.write('\b'*64 + '{:10}'.format(self.total_speed)
+                + '  thread num ' + '{:2}'.format(self.worker_count))
+            sys.stdout.flush()
+
     # start and mornit
     def start_download(self):
         t = threading.Thread(target = self._download)
         self.thread_list.append(t)
         t.start()
+        monitor = threading.Thread(target = self.speed_monitor)
+        monitor.start()
         while self.thread_list:
-            info = self.worker_com.get()
-            self.speed[info[0]] = info[1]
             self.total_speed = sum(list(self.speed.values()))
             self.worker_count = len(self.thread_list)
-            sys.stdout.write('\b'*64 + '{:10}'.format(self.total_speed)
-                + '  thread' + str(self.worker_count))
-            sys.stdout.flush()
             self.thread_list[:] = [t for t in self.thread_list 
                     if t.isAlive()]
             self.num_speed[self.worker_count - 1] = self.total_speed
-            if self.num_speed[self.worker_count - 1] >= self.num_speed[self.worker_count - 2] and self.worker_count <= self.configer.max_thread:
+            if self.num_speed[self.worker_count - 1] >= self.num_speed[self.worker_count - 2] and self.worker_count <= self.configer.max_thread and not self.configer.down_queue.empty():
                 t = threading.Thread(target = self._download)
                 self.thread_list.append(t)
                 t.start()
                 self.num_speed.append(0)
+        print('')
+
 
 def main():
     # Try to get options by user
