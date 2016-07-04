@@ -4,6 +4,7 @@ import urllib.parse
 import requests
 import queue
 import os
+import interface
 
 class Download_Configer(object):
 
@@ -25,13 +26,21 @@ class Download_Configer(object):
 
     # Occur HEAD request and get more information
     def _get_url_header(self):
-        response = requests.head(self.url, stream=True)
+        interface.info_out('HEAD_REQUEST')
+        headers = {
+            'Range': 'bytes=0-1'
+        }
+        response = requests.head(self.url, stream = True, headers = headers)
+        print(response.status_code)
+        # This if statement need modify!!!
         if response.status_code == 206:
             self.partital_content = True
+            interface.info_out('PARTITAL_SUPPORT')
         elif response.status_code // 100 == 4:
-            print('Connection Error')
+            interface.info_out('CONNECTION_ERROR', response.status_code)
         elif response.status_code // 100 == 2:
             self.partital_content = False
+            interface.info_out('PARTITAL_NOT_SUPPORT')
         self.content_length = int(response.headers['Content-Length'])
 
     # Break tasks into partital content
