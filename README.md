@@ -22,7 +22,7 @@ For example:
 So far, wget-fast can only download one file in one time, more feature will be updated latter.
 
 ## Dependence
-`requests`
+`requests`, `humanfriendly`
 ### Install Dependence
 install pip if you have not yet:
 
@@ -31,5 +31,7 @@ install pip if you have not yet:
 and install package:
 
 `pip3 install requests`
+
+`pip3 install humanfriendly`
 ## How to help
 It is sweet of you to send pull requests on github.

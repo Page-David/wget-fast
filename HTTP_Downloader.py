@@ -6,6 +6,8 @@ import time
 import queue
 import requests
 import sys
+import humanfriendly
+import Monitor
 
 class Downloader(object):
 
@@ -15,12 +17,13 @@ class Downloader(object):
         self.file_lock = threading.Lock()
         self.block_size = 1000
         self.thread_list = list()
-        self.speed = dict() # Download Speed for each thread
+        self.status = dict() # Status for each thread
         self.worker_com = queue.Queue() # queue for works send speed info
         self.total_speed = 0 # sum of the speed
         self.num_speed = [0] # the speed when how many threads are started
                              # 0 thread meands speed is 0
         self.worker_count = 0
+        self.monitor = None
 
     # Setup the slaver
     def _download(self):
@@ -46,24 +49,21 @@ class Downloader(object):
                         f.write(bunch)
                         f.flush()
                 start_point += self.block_size
-                self.worker_com.put((
-                    threading.current_thread().name,
-                    int(self.block_size / (time.time() - _time))
-                ))
+                self.status[threading.current_thread().name]\
+                        = humanfriendly.format_size(
+                            int(self.block_size /(time.time() - _time))
+                        )
             self.configer.down_queue.task_done()
+        self.status[threading.current_thread().name] = 'Done'
 
     # speed monitor
     def speed_monitor(self):
-        while len(self.thread_list)>0:
-            try:
-                info = self.worker_com.get_nowait()
-                self.speed[info[0]] = info[1]
-            except queue.Empty:
-                time.sleep(0.1)
-                continue
-            sys.stdout.write('\b'*64 + '{:10}'.format(self.total_speed)
-                + '  thread num ' + '{:2}'.format(self.worker_count))
-            sys.stdout.flush()
+        self.monitor = Monitor.Speed_Monitor()
+        while len(self.thread_list) > 0:
+            time.sleep(.5)
+            self.monitor.refresh_monitor(self.status)
+        self.monitor.finish_monitor()
+
 
     # start and mornit
     def start_download(self):
@@ -73,7 +73,8 @@ class Downloader(object):
         monitor = threading.Thread(target = self.speed_monitor)
         monitor.start()
         while self.thread_list:
-            self.total_speed = sum(list(self.speed.values()))
+            self.total_speed = \
+                    sum([i for i in list(self.status.values()) if type(i) == int])###need modify#####
             self.worker_count = len(self.thread_list)
             self.thread_list[:] = [t for t in self.thread_list 
                     if t.isAlive()]
