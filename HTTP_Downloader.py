@@ -18,6 +18,8 @@ class Downloader(object):
         self.block_size = 1000
         self.thread_list = list()
         self.status = dict() # Status for each thread
+        self.start_time = dict()
+        self.downloaded = dict()
         self.worker_com = queue.Queue() # queue for works send speed info
         self.total_speed = 0 # sum of the speed
         self.num_speed = [0] # the speed when how many threads are started
@@ -33,6 +35,9 @@ class Downloader(object):
             headers = {
                 'Range': 'bytes={}-{}'.format(*data_range)
             }
+            self.start_time[threading.current_thread().name]\
+                = time.time()
+            self.downloaded[threading.current_thread().name] = 0
             response = requests.get(
                 self.configer.url, stream = True,
                 headers = headers
@@ -46,13 +51,15 @@ class Downloader(object):
                         buffering = 1
                     ) as f:
                         f.seek(start_point)
-                        f.write(bunch)
+                        self.downloaded[threading.current_thread().name] += f.write(bunch)
                         f.flush()
                 start_point += self.block_size
                 self.status[threading.current_thread().name]\
                         = humanfriendly.format_size(
-                            int(self.block_size /(time.time() - _time))
-                        )
+                            int(self.downloaded[threading.current_thread().name]\
+                                    /(time.time()\
+                                    - self.start_time[threading.current_thread().name]))
+                        ) + '/s'
             self.configer.down_queue.task_done()
         self.status[threading.current_thread().name] = 'Done'
 
@@ -70,7 +77,8 @@ class Downloader(object):
         t = threading.Thread(target = self._download)
         self.thread_list.append(t)
         t.start()
-        monitor = threading.Thread(target = self.speed_monitor)
+        monitor = threading.Thread(target = self.speed_monitor,
+            name = 'monitor')
         monitor.start()
         while self.thread_list:
             self.total_speed = \
