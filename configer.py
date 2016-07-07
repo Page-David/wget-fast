@@ -26,22 +26,23 @@ class Download_Configer(object):
 
     # Occur HEAD request and get more information
     def _get_url_header(self):
-        interface.info_out('HEAD_REQUEST')
+        interface.info_out('HTTP_REQUEST')
         headers = {
             'Range': 'bytes=0-1'
         }
-        response = requests.head(self.url, stream = True, headers = headers)
-        print(response.status_code)
-        # This if statement need modify!!!
+        response = requests.get(self.url, stream = True, headers = headers)
         if response.status_code == 206:
             self.partital_content = True
             interface.info_out('PARTITAL_SUPPORT')
+            self.content_length =int(response.headers['Content-Range']\
+                    .split('/')[1])
         elif response.status_code // 100 == 4:
             interface.info_out('CONNECTION_ERROR', response.status_code)
         elif response.status_code // 100 == 2:
             self.partital_content = False
             interface.info_out('PARTITAL_NOT_SUPPORT')
-        self.content_length = int(response.headers['Content-Length'])
+            self.content_length = int(response.headers['Content-Length'])
+        interface.info_out('CONTENT_LENGTH', self.content_length)
 
     # Break tasks into partital content
     def _block_content(self):
