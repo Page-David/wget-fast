@@ -20,6 +20,7 @@ class Downloader(object):
         self.status = dict() # Status for each thread
         self.start_time = dict()
         self.downloaded = dict()
+        self.downloaded_size = 0
         self.worker_com = queue.Queue() # queue for works send speed info
         self.total_speed = 0 # sum of the speed
         self.num_speed = [0] # the speed when how many threads are started
@@ -46,6 +47,7 @@ class Downloader(object):
             for bunch in response.iter_content(self.block_size):
                 _time = time.time()
                 with self.file_lock:
+                    self.downloaded_size += len(bunch)
                     with open(
                         self.configer.path, 'r+b',
                         buffering = 1
@@ -68,7 +70,10 @@ class Downloader(object):
         self.monitor = Monitor.Speed_Monitor()
         while len(self.thread_list) > 0:
             time.sleep(.5)
-            self.monitor.refresh_monitor(self.status)
+            self.monitor.refresh_monitor(
+                self.status, total = self.configer.content_length,
+                downloaded = self.downloaded_size
+            )
         self.monitor.finish_monitor()
 
 
