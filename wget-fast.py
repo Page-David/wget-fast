@@ -23,6 +23,9 @@ def main():
     if not args:
         input_errors.out('nothing_input')
         sys.exit(2)
+    if not 'saveto' in globals():
+        saveto = os.getcwd()
+        print(saveto)
     download_configer = configer.Download_Configer(args[0], saveto)
     # Fire...
     downloader = HTTP_Downloader.Downloader(download_configer)
