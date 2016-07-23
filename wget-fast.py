@@ -28,8 +28,9 @@ def main():
         print(saveto)
     download_configer = configer.Download_Configer(args[0], saveto)
     # Fire...
-    downloader = HTTP_Downloader.Downloader(download_configer)
-    downloader.start_download()
+    if download_configer.protocol.lower() in ('http', 'https'):
+        downloader = HTTP_Downloader.Downloader(download_configer)
+        downloader.start_download()
         
 if __name__ == '__main__':
     main()
