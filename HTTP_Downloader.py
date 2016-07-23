@@ -94,7 +94,8 @@ class Downloader(object):
             self.num_speed[self.worker_count - 1] = self.total_speed
             if (self.num_speed[self.worker_count - 1] >= self.num_speed[self.worker_count - 2]
                     and self.worker_count <= self.configer.max_thread 
-                    and not self.configer.down_queue.empty()):
+                    and not self.configer.down_queue.empty()
+                    and self.configer.partital_content):
                 t = threading.Thread(target = self._download)
                 self.thread_list.append(t)
                 t.start()
