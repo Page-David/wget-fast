@@ -2,6 +2,17 @@
 
 # Module for output text config and speed output.
 
+class Version_Info(object):
+    
+    def __init__(self):
+        self.name = "Wget-Fast"
+        self.version = "0.90"
+        self.author = "by Page David"
+        self.email = "David991010@gmail.com"
+
+    def out(self):
+        print('{} {}'.format(self.name, self.version,))
+
 def info_out(key, *values):
 
     info_dict = {
@@ -15,4 +26,12 @@ def info_out(key, *values):
         }
     print(info_dict.get(key, 'WARM: Your interface module may be broken,'
             'please send issue to github repository').format(*values))
+
+class Error_List(object):
+
+    def __init__(self):
+        self.Errors = {'nothing_input': "No URL input, exiting.."}
+
+    def out(self, error):
+        print(self.Errors[error])
 
