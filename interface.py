@@ -8,10 +8,13 @@ class Version_Info(object):
         self.name = "Wget-Fast"
         self.version = "0.90"
         self.author = "by Page David"
-        self.email = "David991010@gmail.com"
+        self.email = "email to David991010@gmail.com"
 
     def out(self):
-        print('{} {}'.format(self.name, self.version,))
+        print('{} {}'.format(self.name, self.version))
+
+    def out_detail(self):
+        print('{} {}'.format(self.author, self.email))
 
 def info_out(key, *values):
 
